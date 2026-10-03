@@ -14,7 +14,9 @@ export function Search() {
   return (
     <div
       className={`flex items-center gap-2 border transition-all duration-300 ${
-        open ? "w-40 border-foreground/80 bg-background/80 px-2 py-1 sm:w-64" : "w-6 border-transparent"
+        open
+          ? "absolute right-5 top-[68px] w-[calc(100vw-40px)] rounded-sm border-border bg-background px-3 py-3 shadow-lg sm:static sm:w-56 sm:py-2"
+          : "w-6 border-transparent"
       }`}
     >
       <button onClick={() => setOpen(true)} aria-label="Buscar" className="shrink-0">
@@ -29,12 +31,24 @@ export function Search() {
               setQuery(e.target.value);
               window.scrollTo({ top: 0 });
             }}
-            onBlur={() => !query && setOpen(false)}
-            placeholder="Títulos, personas y géneros"
+            aria-label="Buscar títulos, personas o géneros"
+            placeholder="Título o género"
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                setQuery("");
+                setOpen(false);
+              }
+            }}
             className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
-          {query && (
-            <button onClick={() => setQuery("")} aria-label="Limpiar">
+          {open && (
+            <button
+              onClick={() => {
+                setQuery("");
+                setOpen(false);
+              }}
+              aria-label="Cerrar búsqueda"
+            >
               <X className="h-4 w-4" />
             </button>
           )}

@@ -1,61 +1,53 @@
-import { Check, ChevronDown, Play, Plus, ThumbsUp } from "lucide-react";
+import { Check, Plus } from "lucide-react";
 import type { Movie } from "@/data/movies";
 import { useStreamix } from "./StreamixContext";
 import { cardWidth } from "./RowShell";
 
-export function MovieCard({ movie, showProgress }: { movie: Movie; showProgress?: boolean | undefined }) {
-  const { open, play, toggleList, inList } = useStreamix();
-  const listed = inList(movie.id);
-  const stop = (fn: () => void) => (e: React.MouseEvent) => {
-    e.stopPropagation();
-    fn();
-  };
-
+export function MovieCard({ movie }: { movie: Movie }) {
+  const { open, toggleList, inList } = useStreamix();
+  const saved = inList(movie.id);
   return (
-    <div className={`${cardWidth} group/card relative`}>
-      <div
+    <article
+      className={
+        cardWidth +
+        " group/card relative rounded bg-card transition-transform duration-300 hover:-translate-y-1"
+      }
+    >
+      <button
         onClick={() => open(movie)}
-        className="relative cursor-pointer overflow-hidden rounded-md bg-card shadow-lg shadow-background transition-all duration-300 md:group-hover/card:z-30 md:group-hover/card:-translate-y-6 md:group-hover/card:scale-[1.3] md:group-hover/card:shadow-2xl"
+        aria-label={"Ver ficha de " + movie.title}
+        className="relative block w-full overflow-hidden rounded-t"
       >
-        <div className="relative aspect-video">
-          <img src={movie.image} alt={movie.title} loading="lazy" width={1280} height={720} className="h-full w-full object-cover" />
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background/90 to-transparent px-2 pb-1.5 pt-6">
-            <p className="truncate text-xs font-bold md:text-sm">{movie.title}</p>
-          </div>
-        </div>
-        {showProgress && movie.progress != null && (
-          <div className="h-1 bg-muted">
-            <div className="h-full bg-primary" style={{ width: `${movie.progress}%` }} />
-          </div>
-        )}
-        <div className="hidden max-h-0 overflow-hidden bg-card px-3 transition-all duration-300 md:block md:group-hover/card:max-h-40 md:group-hover/card:py-3">
-          <div className="flex items-center gap-1.5">
-            <button onClick={stop(() => play(movie))} aria-label="Reproducir" className="grid h-7 w-7 place-items-center rounded-full bg-foreground text-background">
-              <Play className="h-3.5 w-3.5 fill-current" />
-            </button>
-            <button onClick={stop(() => toggleList(movie))} aria-label="Mi lista" className="grid h-7 w-7 place-items-center rounded-full border-2 border-muted-foreground hover:border-foreground">
-              {listed ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-            </button>
-            <button onClick={stop(() => {})} aria-label="Me gusta" className="grid h-7 w-7 place-items-center rounded-full border-2 border-muted-foreground hover:border-foreground">
-              <ThumbsUp className="h-3.5 w-3.5" />
-            </button>
-            <button onClick={stop(() => open(movie))} aria-label="Más" className="ml-auto grid h-7 w-7 place-items-center rounded-full border-2 border-muted-foreground hover:border-foreground">
-              <ChevronDown className="h-3.5 w-3.5" />
-            </button>
-          </div>
-          <div className="mt-2 flex items-center gap-1.5 text-[10px] font-semibold">
-            <span className="text-match">{movie.matchPercentage}% para ti</span>
-            <span className="border border-muted-foreground px-1 text-muted-foreground">{movie.rating}</span>
-            <span className="text-muted-foreground">{movie.duration}</span>
-          </div>
-          {showProgress && movie.remaining ? (
-            <p className="mt-1 text-[10px] text-muted-foreground">{movie.remaining}</p>
-          ) : (
-            <p className="mt-1 truncate text-[10px] text-foreground/85">{movie.genres.join(" · ")}</p>
-          )}
-        </div>
+        <img
+          src={movie.image}
+          alt=""
+          loading="lazy"
+          width={1280}
+          height={720}
+          className="aspect-video w-full object-cover transition-transform duration-300 group-hover/card:scale-105"
+        />
+        <span className="absolute left-2 top-1 text-lg font-black text-primary drop-shadow-md">
+          N
+        </span>
+        <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent px-3 pb-2 pt-8 text-left text-sm font-bold">
+          {movie.title}
+        </span>
+      </button>
+      <div className="flex items-center justify-between gap-2 px-3 py-2">
+        <p className="min-w-0 truncate text-[11px] text-muted-foreground">
+          {movie.genres[0]} · {movie.duration}
+        </p>
+        <button
+          onClick={() => toggleList(movie)}
+          aria-label={
+            (saved ? "Quitar " : "Guardar ") + movie.title + (saved ? " de" : " en") + " mi lista"
+          }
+          aria-pressed={saved}
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-muted-foreground text-foreground transition-colors hover:border-white hover:bg-white/10"
+        >
+          {saved ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+        </button>
       </div>
-      {showProgress && movie.remaining && <p className="mt-1.5 text-xs text-muted-foreground md:hidden">{movie.remaining}</p>}
-    </div>
+    </article>
   );
 }

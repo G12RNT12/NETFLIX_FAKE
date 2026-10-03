@@ -1,22 +1,18 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import type { Movie } from "@/data/movies";
-import { movies } from "@/data/movies";
+import { movies, type Movie } from "@/data/movies";
 
-interface Ctx {
-  myList: string[];
-  toggleList: (m: Movie) => void;
+interface StreamixState {
+  toggleList: (movie: Movie) => void;
   inList: (id: string) => boolean;
   selected: Movie | null;
-  open: (m: Movie) => void;
+  open: (movie: Movie) => void;
   close: () => void;
-  play: (m: Movie) => void;
   query: string;
-  setQuery: (q: string) => void;
+  setQuery: (query: string) => void;
   myListMovies: Movie[];
 }
-
-const C = createContext<Ctx | null>(null);
+const StreamixContext = createContext<StreamixState | null>(null);
 const KEY = "streamix-mylist";
 
 export function StreamixProvider({ children }: { children: ReactNode }) {
@@ -27,45 +23,60 @@ export function StreamixProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const v = localStorage.getItem(KEY);
-      if (v) setMyList(JSON.parse(v));
-    } catch {}
+      const stored: unknown = JSON.parse(localStorage.getItem(KEY) ?? "[]");
+      if (Array.isArray(stored))
+        setMyList(
+          stored.filter(
+            (id): id is string => typeof id === "string" && movies.some((movie) => movie.id === id),
+          ),
+        );
+    } catch {
+      // An unavailable or damaged store should not block the catalog.
+    }
     setLoaded(true);
   }, []);
+
   useEffect(() => {
-    if (loaded) localStorage.setItem(KEY, JSON.stringify(myList));
+    if (!loaded) return;
+    try {
+      localStorage.setItem(KEY, JSON.stringify(myList));
+    } catch {
+      // The list remains usable in memory when browser storage is disabled.
+    }
   }, [myList, loaded]);
 
-  const toggleList = (m: Movie) => {
-    setMyList((l) => {
-      const has = l.includes(m.id);
-      toast(has ? `"${m.title}" eliminado de Mi lista` : `"${m.title}" añadido a Mi lista`);
-      return has ? l.filter((x) => x !== m.id) : [...l, m.id];
-    });
+  const toggleList = (movie: Movie) => {
+    const saved = myList.includes(movie.id);
+    setMyList((list) =>
+      list.includes(movie.id) ? list.filter((id) => id !== movie.id) : [...list, movie.id],
+    );
+    toast(
+      saved
+        ? `Quitaste “${movie.title}” de tus pendientes`
+        : `Guardaste “${movie.title}” para después`,
+    );
   };
 
   return (
-    <C.Provider
+    <StreamixContext.Provider
       value={{
-        myList,
         toggleList,
         inList: (id) => myList.includes(id),
         selected,
         open: setSelected,
         close: () => setSelected(null),
-        play: (m) => toast(`▶ Reproduciendo "${m.title}"`, { description: "Disfruta la función." }),
         query,
         setQuery,
-        myListMovies: movies.filter((m) => myList.includes(m.id)),
+        myListMovies: movies.filter((movie) => myList.includes(movie.id)),
       }}
     >
       {children}
-    </C.Provider>
+    </StreamixContext.Provider>
   );
 }
 
 export const useStreamix = () => {
-  const c = useContext(C);
-  if (!c) throw new Error("useStreamix outside provider");
-  return c;
+  const context = useContext(StreamixContext);
+  if (!context) throw new Error("useStreamix requires StreamixProvider");
+  return context;
 };
